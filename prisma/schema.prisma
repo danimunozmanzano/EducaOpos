@@ -1,0 +1,109 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentType {
+  CASE
+  TOPIC
+  PROGRAM
+  ORAL
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  locale       String?  @default("ca")
+  role         String?  @default("user")
+  createdAt    DateTime @default(now())
+
+  contents     Content[]
+  assessments  Assessment[]
+  subscription Subscription?
+  bookings     Booking[]
+  credit       Credit?
+}
+
+model Subscription {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id])
+  status           String    @default("inactive")
+  stripeCustomerId String?
+  stripeSubId      String?
+  priceId          String?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Content {
+  id        String      @id @default(cuid())
+  ownerId   String
+  owner     User        @relation(fields: [ownerId], references: [id])
+  type      ContentType
+  title     String
+  body      Json?
+  locale    String?     @default("ca")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  assessments Assessment[]
+}
+
+model Rubric {
+  id        String   @id
+  scope     String
+  version   String
+  locale    String
+  weights   Json
+  levels    Json
+  criteria  Json
+  createdAt DateTime @default(now())
+
+  // AFEGIT: llista d'avaluacions que apunten a aquesta rúbrica
+  assessments Assessment[]
+}
+
+model Assessment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id])
+  rubricId  String
+  rubric    Rubric   @relation(fields: [rubricId], references: [id])
+  result    Json
+  feedback  Json
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  trainerId String
+  startsAt  DateTime
+  endsAt    DateTime
+  status    String   @default("pending")
+  notes     String?
+  createdAt DateTime @default(now())
+}
+
+model Credit {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id])
+  monthly   Int       @default(2)
+  balance   Int       @default(2)
+  periodEnd DateTime?
+  updatedAt DateTime  @updatedAt
+}
