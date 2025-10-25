@@ -1,55 +1,52 @@
-"use client";
-import { useState } from "react";
+type Plan = {
+  id: string;
+  title: string;
+  priceMonthly: number;
+  features: string[];
+  ctaHref: string;
+};
 
-async function post(url: string, body: any) {
-  const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  return r.json();
-}
+const PLANS: Plan[] = [
+  {
+    id: "monthly",
+    title: "Mensual",
+    priceMonthly: 19,
+    features: [
+      "Accés complet a l’especialitat d’Educació Física",
+      "Supòsits pràctics",
+      "Desenvolupament de tema",
+      "Programació didàctica",
+      "Exposició oral",
+    ],
+    ctaHref: "/checkout",
+  },
+];
 
-export default function PreusPage() {
-  const [loading, setLoading] = useState<string>();
-
-  async function checkout(plan: "standard" | "pro") {
-    setLoading(plan);
-    const { url } = await post("/api/billing/checkout", { plan });
-    window.location.href = url;
-  }
-
-  async function portal() {
-    const { url } = await post("/api/billing/portal", {});
-    window.location.href = url;
-  }
-
+export default function Page() {
   return (
-    <main className="max-w-5xl mx-auto p-6">
-      <h1 className="text-3xl font-bold mb-6">Plans</h1>
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="border rounded-2xl p-6">
-          <h2 className="text-xl font-semibold">Standard</h2>
-          <p className="mt-2 text-sm text-gray-500">30–40 €/mes · 7 dies de prova</p>
-          <ul className="mt-3 text-sm text-gray-600 list-disc pl-5">
-            <li>Accés complet als mòduls</li>
-            <li>Correccions amb fair use</li>
-            <li>Exportació a PDF</li>
-          </ul>
-          <button onClick={() => checkout("standard")} disabled={loading==="standard"} className="mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white">
-            {loading==="standard" ? "Creant sessió…" : "Comença (7 dies gratis)"}
-          </button>
-        </div>
-
-        <div className="border rounded-2xl p-6">
-          <h2 className="text-xl font-semibold">Pro</h2>
-          <p className="mt-2 text-sm text-gray-500">Inclou sessions 1-a-1</p>
-          <ul className="mt-3 text-sm text-gray-600 list-disc pl-5">
-            <li>Tot l’Standard</li>
-            <li>Crèdits mensuals de reserva</li>
-            <li>Materials premium</li>
-          </ul>
-          <button onClick={() => checkout("pro")} disabled={loading==="pro"} className="mt-4 px-4 py-2 rounded-lg bg-blue-600 text-white">
-            {loading==="pro" ? "Creant sessió…" : "Actualitza a Pro"}
-          </button>
-          <button onClick={portal} className="mt-2 px-4 py-2 rounded-lg border">Gestiona la subscripció</button>
-        </div>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Plans de subscripció</h1>
+      <div className="grid gap-4 md:grid-cols-2">
+        {PLANS.map((p) => (
+          <div
+            key={p.id}
+            className="border rounded-xl shadow-md p-4 flex flex-col justify-between"
+          >
+            <h2 className="text-xl font-semibold">{p.title}</h2>
+            <p className="text-lg font-bold mt-2">{p.priceMonthly} €/mes</p>
+            <ul className="mt-2 text-sm list-disc pl-5">
+              {p.features.map((f) => (
+                <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <a
+              href={p.ctaHref}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md text-center"
+            >
+              Subscriu-t’hi
+            </a>
+          </div>
+        ))}
       </div>
     </main>
   );

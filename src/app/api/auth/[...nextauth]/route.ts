@@ -1,32 +1,36 @@
-// src/app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import Google from "next-auth/providers/google";
+import Email from "next-auth/providers/email";
+import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { JWT } from "next-auth/jwt";
+import type { AdapterUser } from "next-auth/adapters";
+import { db } from "@/lib/db";
 
-const prisma = new PrismaClient();
+type Role = "ADMIN" | "EDITOR" | "TUTOR" | "ALUMNE";
 
-export const authOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Correu", type: "text" },
-        password: { label: "Contrasenya", type: "password" },
-      },
-      async authorize(credentials: any) {
-        const user = await prisma.user.findUnique({ where: { email: credentials?.email } });
-        if (!user) return null;
-        const ok = await bcrypt.compare(credentials?.password || "", user.passwordHash || "");
-        if (!ok) return null;
-        return { id: user.id, email: user.email, name: user.name };
-      },
-    }),
-  ],
-  pages: { signIn: "/login" },
+const handler = NextAuth({
+  adapter: PrismaAdapter(db),
   session: { strategy: "jwt" },
-  secret: process.env.AUTH_SECRET,
-} as any;
+  providers: [
+    Google({ allowDangerousEmailAccountLinking: true }),
+    Email({}),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        const u = user as AdapterUser & { role?: Role };
+        (token as JWT & { role?: Role }).role = u.role ?? "ALUMNE";
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        (session.user as typeof session.user & { role?: Role }).role =
+          (token as JWT & { role?: Role }).role ?? "ALUMNE";
+      }
+      return session;
+    },
+  },
+});
 
-const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
